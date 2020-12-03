@@ -4,10 +4,11 @@ class ServiceRegistry {
   constructor(log) {
     this.log = log;
     this.services = {};
-    this.timeout = 30;
+    this.timeout = 10;
   }
 
   get(name, version) {
+    this.cleanUp();
     const candidates = Object.values(this.services);
     const con = candidates.filter((service) => {
       return (
@@ -18,6 +19,7 @@ class ServiceRegistry {
   }
 
   register(name, version, ip, port) {
+    this.cleanUp();
     const key = name + version + ip + port;
     if (!this.services[key]) {
       this.services[key] = {};
@@ -42,6 +44,16 @@ class ServiceRegistry {
     const key = name + version + ip + port;
     delete this.services[key];
     return key;
+  }
+
+  cleanUp() {
+    const now = Math.floor(new Date() / 1000);
+    Object.keys(this.services).forEach((key) => {
+      if (this.services[key].timestamp + this.timeout < now) {
+        delete this.services[key];
+        this.log.debug(`Removed service ${key}`);
+      }
+    });
   }
 }
 
